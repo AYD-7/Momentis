@@ -5,10 +5,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "seed": "node ./config/seed.config.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Ayodeji Aronimo",
   "license": "ISC",
   "type": "module",
   "dependencies": {
@@ -17,6 +18,9 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "mongoose": "^9.2.3",
-    "morgan": "^1.10.1"
+    "morgan": "^1.10.1",
+    "nodemailer": "^8.0.2",
+    "qrcode": "^1.5.4",
+    "uuid": "^13.0.0"
   }
 }
