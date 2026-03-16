@@ -1,9 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
-import mongoose from 'mongoose';
 import morgan from 'morgan';
 import message from './data/message.js';
 import summary from './data/summaryInfo.js';
+import health from './data/health.js';
 import adminRoutes from './routes/admin.routes.js';
 import eventRoutes from './routes/event.routes.js';
 import registrationRoutes from './routes/registration.routes.js';
@@ -24,38 +24,24 @@ connectDB();
 
 
 // Routes
-app.use("/api/events",        eventRoutes);
-app.use("/api/registrations", registrationRoutes);
-app.use("/api/tickets",       ticketRoutes);
-app.use("/api/admin",         adminRoutes);
-
-
-// Root
-app.get('/', (req, res) => {
-  res.status(200).send(message);
-})
-
-// Health Check
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    service: "Momentis",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development",
-  });
-});
-
-// Summary
-app.get("/summary", (req, res) => {
-  res.json(summary);
-});
+app.get('/', (req, res) => res.status(200).send(message)); // root
+app.get("/health", (req, res) => res.json(health)); // health check
+app.get("/summary", (req, res) => res.json(summary)); // summary
+app.use("/api/events", eventRoutes); // event routes
+app.use("/api/registrations", registrationRoutes); // registration routes
+app.use("/api/tickets", ticketRoutes); // ticket routes
+app.use("/api/admin", adminRoutes); // admin routes
 
 // 404 handler - if no route matched
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: `Route ${req.method} ${req.path} not found` });
-});
+  res.status(404).json(
+    { success: false, 
+      message: `Route ${req.method} ${req.path} not found`,
+    }
+  )
+}); 
 
-// 
+
 const PORT = process.env.PORT || 5000; // Port  
 
 

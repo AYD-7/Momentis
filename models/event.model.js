@@ -34,6 +34,7 @@ const eventSchema = new mongoose.Schema(
     // Remaining spots - starts equal to capacity, goes down as people register
     availableSlots: {
       type: Number,
+      default: function() { return this.capacity; } // Sets available slots to capacity on creation
     },
 
     // Ticket price (0 = free)
@@ -56,14 +57,6 @@ const eventSchema = new mongoose.Schema(
     timestamps: true, // adds createdAt and updatedAt fields automatically
   }
 );
-
-// Before saving a new event, set availableSlots to match capacity
-eventSchema.pre("save", function (next) {
-  if (this.isNew) {
-    this.availableSlots = this.capacity;
-  }
-  next();
-});
 
 
 const Event = mongoose.model("Event", eventSchema);

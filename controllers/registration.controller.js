@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import Event from "../models/event.model.js";
 import Registration from "../models/registration.model.js";
 import Ticket from "../models/ticket.model.js";
@@ -84,7 +83,7 @@ export const registerForEvent = async (req, res) => {
       console.log("Email failed to send (registration still worked):", emailError.message);
     }
 
-    // Returning everything the user needs
+    // Sending a response
     return res.status(201).json({
       success: true,
       message: "Registration successful! Check your email for your ticket.",
@@ -101,6 +100,7 @@ export const registerForEvent = async (req, res) => {
       },
     });
   } catch (error) {
+    console.log("Event registration error:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };

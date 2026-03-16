@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const registrationSchema = new mongoose.Schema(
   {
-    // Which event this registration is for
+    // Which event (id) this registration is for
     event: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Event",
@@ -15,7 +15,7 @@ const registrationSchema = new mongoose.Schema(
     email:     { type: String, required: true, lowercase: true, trim: true },
     phone:     { type: String, trim: true },
 
-    // Any notes the attendee wants to leave (e.g. dietary preference)
+    // Any notes the attendee wants to leave (e.g. I am fine arts student)
     notes: { type: String },
 
     // confirmed = active, cancelled = they pulled out

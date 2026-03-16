@@ -1,5 +1,4 @@
 import Ticket from "../models/ticket.model.js";
-import Event from "../models/event.model.js";
 
 // GET /api/tickets/:ticketCode || Checking a ticket by its code
 export const getTicket = async (req, res) => {

@@ -1,6 +1,5 @@
-
 import nodemailer from "nodemailer";
-import 'dotenv/config';
+// import 'dotenv/config';
 
 // Configuring transporter
 const createTransporter = async () => {
@@ -22,6 +21,7 @@ const createTransporter = async () => {
     transporter: nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: Number(process.env.EMAIL_PORT) || 587,
+      secure: process.env.EMAIL_SECURE === "true",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -71,7 +71,7 @@ export const sendConfirmationEmail = async ({ to, name, event, ticketCode, qrCod
 
         ${qrCode ? `
         <div style="text-align: center; margin: 20px 0;">
-          <img src="${qrCode}" width="150" height="150" style="border: 4px solid #4f46e5; border-radius: 8px;" />
+          <img src="cid:qrcode" width="150" height="150" style="border: 4px solid #4f46e5; border-radius: 8px;" />
           <p style="color: #9ca3af; font-size: 13px;">Scan this QR code at the entrance</p>
         </div>` : ""}
 
@@ -83,7 +83,7 @@ export const sendConfirmationEmail = async ({ to, name, event, ticketCode, qrCod
       </div>
 
       <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 13px;">
-        <p>Questions? Email the organizer: <strong>${event.organizerEmail}</strong></p>
+        <p>Questions? Email the organizer: <strong><a href="mailto:${event.organizerEmail} target="_blank" rel="noreferrer noopener">${event.organizerEmail}</a></strong></p>
       </div>
 
     </div>
@@ -94,6 +94,14 @@ export const sendConfirmationEmail = async ({ to, name, event, ticketCode, qrCod
     to,
     subject: `Your ticket for ${event.title}`,
     html,
+    attachments: [
+    {
+      filename: "ticket-qrcode.png",
+      content: qrCode.split("base64,")[1], // strip the data:image/png;base64, part
+      encoding: "base64",
+      cid: "qrcode", // content ID - used to reference it in the HTML
+    },
+  ],
   });
 
   // If using Ethereal, return the preview URL so we can see the email

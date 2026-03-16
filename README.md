@@ -1,552 +1,303 @@
-# Momentis
+# Event Registration System
 
-A backend service built with Node.js and Express that handles the full event registration lifecycle — from browsing events to scanning tickets at the door.
+A simple Node.js and Express backend that lets people register for events, receive a ticket by email, and get checked in at the door using a QR code.
 
-
-
-## What it does
-
-- **Browse and create events** with capacity limits, categories, and organiser info
-- **Register attendees** for events — each registration generates a unique ticket with a QR code
-- **Send confirmation emails** automatically after registration
-- **Validate tickets at the gate** — once scanned, a ticket is marked as used and can't be used again
-- **Prevent overbooking** stops event's registration when there are no availab
-- **Restore slots** when someone cancels their registration
-- **Admin panel** for viewing registrations, check-in stats, and ticket statuses per event
-
-
-## Technology Stack
-
-- **Node.js v18 or higher** (the project uses ES Modules — `"type": "module"`)
-- **MongoDB** — local or Atlas. If using a local install, it needs to run as a replica set for transactions to work (see below)
+Built as a capstone project. No fancy abstractions — just clean, readable code that works.
 
 ---
 
-## Getting started
+## What it does
 
-### 1. Clone and install
+- Create events with a title, date, location, and a capacity limit
+- Anyone can register for an event with their name and email
+- After registering, they get a confirmation email with their ticket code and a QR code
+- The system prevents the same email from registering twice for the same event
+- The system prevents overbooking — once the event is full, no more registrations go through
+- Tickets can be validated (scanned) at the gate, and each ticket only works once
+- If someone cancels, their slot is freed up for someone else
+- An admin panel lets you see all registrations for an event, plus check-in stats
+
+---
+
+## Project structure
+
+```
+src/
+├── app.js                         ← entry point, wires everything together
+├── config/
+│   ├── db.js                      ← MongoDB connection
+│   └── seed.js                    ← adds sample events to the database
+├── models/
+│   ├── event.model.js             ← what an event looks like in the database
+│   ├── registration.model.js      ← stores each person's registration
+│   └── ticket.model.js            ← the ticket generated after registration
+├── controllers/
+│   ├── event.controller.js        ← logic for listing, creating, updating events
+│   ├── registration.controller.js ← the main registration flow
+│   ├── ticket.controller.js       ← looking up and validating tickets
+│   └── admin.controller.js        ← admin views
+├── routes/
+│   ├── event.routes.js
+│   ├── registration.routes.js
+│   ├── ticket.routes.js
+│   └── admin.routes.js
+├── middleware/
+│   └── auth.middleware.js         ← blocks admin routes without the right key
+└── utils/
+    ├── email.util.js              ← sends the confirmation email
+    └── ticket.util.js             ← generates ticket codes and QR codes
+```
+
+---
+
+## Setup
+
+### 1. Install dependencies
 
 ```bash
-git clone <your-repo-url>
-cd event-registration-system
 npm install
 ```
 
-### 2. Configure your environment
+### 2. Create your `.env` file
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and at minimum set your `MONGO_URI`. Everything else has sensible defaults for local development.
+The only thing you must set is `MONGO_URI`. Everything else works fine with the defaults.
 
-```env
+```
 MONGO_URI=mongodb://localhost:27017/event_registration
-PORT=3000
-ADMIN_API_KEY=change-this-to-something-secret
 ```
 
-### 3. Set up MongoDB as a replica set (required for transactions)
+If you're using MongoDB Atlas, paste your connection string there instead.
 
-MongoDB transactions require a replica set — even for local development. This is a one-time setup.
-
-**On macOS with Homebrew:**
-```bash
-# Find your mongod config file
-brew services stop mongodb-community
-
-# Edit /opt/homebrew/etc/mongod.conf and add:
-# replication:
-#   replSetName: "rs0"
-
-brew services start mongodb-community
-
-# Then initialise the replica set
-mongosh
-> rs.initiate()
-```
-
-**Using Docker (easier):**
-```bash
-docker run -d -p 27017:27017 --name mongo-rs \
-  mongo:7 --replSet rs0
-
-docker exec mongo-rs mongosh --eval "rs.initiate()"
-```
-
-**Using MongoDB Atlas:**
-Atlas runs as a replica set by default — no extra setup needed. Just paste your connection string into `MONGO_URI`.
-
-### 4. Seed some sample events
+### 3. Add sample events to the database
 
 ```bash
 npm run seed
 ```
 
-This creates three sample events (Tech Summit, Startup Pitch Night, Design Workshop) so you have something to work with immediately. It wipes the events collection first, so don't run it on a database with real data.
+This creates ten test events you can immediately register for. Run it once.
+By the time you are seeing this, I have already done it.
 
-### 5. Start the server
+### 4. Start the server
 
 ```bash
-# Development — restarts automatically when you change files
-npm run dev
-
-# Production
 npm start
 ```
 
-You should see something like:
-```
-╔════════════════════════════════════════════╗
-║   🎟️  Event Registration System            ║
-╠════════════════════════════════════════════╣
-║   Server   →  http://localhost:3000         ║
-║   Env      →  development                   ║
-╚════════════════════════════════════════════╝
-```
-
-Hit `http://localhost:3000` in your browser or Postman to see a list of all endpoints.
+Visit `http://localhost:5000/summary` and you'll see a list of all available routes.
 
 ---
 
-## How to actually use this
+## How to use it
 
-Here's a realistic walkthrough of the full flow, from creating an event to scanning a ticket at the door.
+I didn't have the chance to create a client-side app for this, so you can only use API testing tools like Postman, ThunderClient, or Insomnia. 
+---
 
-### Step 1 — Create an event
-
-This is an admin-only action. Pass your admin key in the header.
+### Step 1 — See what events are available
 
 ```
-POST /api/events
-Header: x-admin-key: supersecret-admin-key
+GET http://localhost:5000/api/events
+```
+
+Copy one of the event IDs from the response — you'll need it for registration.
+
+---
+
+### Step 2 — Register for an event
+
+```
+POST http://localhost:5000/api/registrations
 Content-Type: application/json
 ```
 
 ```json
 {
-  "title": "Node.js Workshop: Build a REST API",
-  "description": "A hands-on workshop where you build a production-ready API from scratch. Bring your laptop.",
-  "date": "2025-09-20T10:00:00",
-  "endDate": "2025-09-20T17:00:00",
-  "location": {
-    "venue": "Tech Hub Lagos",
-    "address": "14 Bayo Kuku St",
-    "city": "Lagos",
-    "state": "Lagos",
-    "country": "Nigeria"
-  },
-  "capacity": 50,
-  "price": 0,
-  "category": "Technology",
-  "organizer": {
-    "name": "DevCircle Africa",
-    "email": "hello@devcircle.africa",
-    "phone": "+234-800-000-0000"
-  },
-  "tags": ["nodejs", "api", "backend", "workshop"]
+  "eventId": "PASTE_EVENT_ID_HERE",
+  "firstName": "Oluwatobi",
+  "lastName": "Adelabu",
+  "email": "oluwatobiadelabu@example.com",
+  "phone": "08012345678",
+  "notes": "I'm thinking of migrating to fine arts"
 }
 ```
 
-The response includes the event ID — copy it, you'll need it for registration.
+**What happens:**
+1. The system checks the event exists and has available slots
+2. It checks the email hasn't already registered for this event
+3. A registration record is saved
+4. A ticket is generated with a unique code like `AB12-CD34-EF56`
+5. A QR code is generated for that ticket
+6. A confirmation email is sent
 
-### Step 2 — Check available events
-
-Anyone can do this — no auth required.
-
-```
-GET /api/events
-GET /api/events?category=Technology
-GET /api/events?search=node
-GET /api/events?page=1&limit=5
-```
-
-### Step 3 — Register an attendee
-
-```
-POST /api/registrations
-Content-Type: application/json
-```
-
+**The response looks like this:**
 ```json
 {
-  "eventId": "<paste the event ID from step 1>",
-  "attendee": {
-    "firstName": "Amara",
-    "lastName": "Okafor",
-    "email": "amara@example.com",
-    "phone": "+234-812-000-0000"
-  },
-  "notes": "I'm a complete beginner — is that okay?"
-}
-```
-
-What happens behind the scenes:
-1. The event's `availableSlots` is decremented atomically (prevents overbooking)
-2. A registration record is created
-3. A ticket is generated with a unique code like `AB12-CD34-EF56`
-4. A QR code is generated that encodes the ticket validation URL
-5. A confirmation email is sent to `amara@example.com`
-
-In the response you'll get the ticket code, the QR code as a base64 image, and — if you're in development mode with Ethereal — an `emailPreviewUrl` you can open in your browser to see the email.
-
-### Step 4 — Check your email
-
-In development, open the `emailPreviewUrl` from the response in your browser. You'll see a nicely formatted HTML email with the event details, ticket code, and QR code image.
-
-In production (with real SMTP configured), the email lands in the attendee's inbox.
-
-### Step 5 — Look up a ticket
-
-The attendee can look up their ticket at any time using the code from their email.
-
-```
-GET /api/tickets/AB12-CD34-EF56
-```
-
-The response includes everything — event info, attendee details, ticket status, and the QR code image.
-
-### Step 6 — Validate the ticket at the gate
-
-When the attendee arrives, a gate scanner (or staff member) hits the validate endpoint. The QR code encodes this URL directly, so scanning the QR is the same as making this request.
-
-```
-POST /api/tickets/validate/AB12-CD34-EF56
-Content-Type: application/json
-```
-
-```json
-{
-  "validatedBy": "Gate A - Staff: James"
-}
-```
-
-**If the ticket is valid:** The ticket is marked as `used`, the timestamp is recorded, and the response confirms entry.
-
-**If someone tries to scan it a second time:** The API returns a 409 with the timestamp of the original scan. Denied.
-
-**If the ticket was cancelled:** 400, denied.
-
-**If the event hasn't started yet:** 400, denied with the start time.
-
-### Step 7 — Cancel a registration
-
-If an attendee can't make it:
-
-```
-PATCH /api/registrations/<registration-id>/cancel
-```
-
-This marks the registration and ticket as cancelled, and adds the freed slot back to the event's available capacity — someone else can register.
-
-### Step 8 — Check admin dashboard
-
-While the event is running, you can monitor check-ins:
-
-```
-GET /api/admin/events/<event-id>/registrations
-Header: x-admin-key: supersecret-admin-key
-```
-
-The response includes a `summary` object:
-```json
-{
-  "summary": {
-    "total": 50,
-    "confirmed": 47,
-    "cancelled": 3,
-    "checkedIn": 31
+  "success": true,
+  "message": "Registration successful! Check your email for your ticket.",
+  "data": {
+    "registration": { ... },
+    "ticket": {
+      "ticketCode": "AB12-CD34-EF56",
+      "status": "valid",
+      "qrCode": "data:image/png;base64,..."
+    },
+    "slotsRemaining": 29,
+    "emailPreviewUrl": "https://ethereal.email/message/..."
   }
 }
 ```
 
-And each registration entry shows the attendee's ticket status (valid, used, etc.) so you can see exactly who's arrived and who hasn't.
+The `emailPreviewUrl` is only present in development mode. Open it in the browser to see exactly what the email looks like.
 
 ---
 
-## API reference
-
-### Events
-
-| Method | URL | Auth | Description |
-|--------|-----|------|-------------|
-| GET | `/api/events` | Public | List published events |
-| GET | `/api/events/:id` | Public | Get event by ID |
-| POST | `/api/events` | Admin | Create a new event |
-| PATCH | `/api/events/:id` | Admin | Update an event |
-
-**Query params for GET /api/events:**
-- `category` — one of: Technology, Business, Design, Music, Sports, Health, Education, Other
-- `search` — partial match on event title
-- `page` — page number (default: 1)
-- `limit` — results per page (default: 10)
-
----
-
-### Registrations
-
-| Method | URL | Auth | Description |
-|--------|-----|------|-------------|
-| POST | `/api/registrations` | Public | Register for an event |
-| GET | `/api/registrations/:id` | Public | Get registration + ticket info |
-| PATCH | `/api/registrations/:id/cancel` | Public | Cancel a registration |
-
----
-
-### Tickets
-
-| Method | URL | Auth | Description |
-|--------|-----|------|-------------|
-| GET | `/api/tickets/:ticketCode` | Public | Fetch ticket details |
-| POST | `/api/tickets/validate/:ticketCode` | Public | Validate (scan) a ticket |
-
----
-
-### Admin (all require `x-admin-key` header)
-
-| Method | URL | Description |
-|--------|-----|-------------|
-| GET | `/api/admin/events` | All events with registration stats |
-| GET | `/api/admin/events/:eventId/registrations` | Registrant list for an event |
-| GET | `/api/admin/tickets` | All tickets (filterable by status, event) |
-
-**Query params for admin registrations:**
-- `status` — "confirmed" or "cancelled"
-- `page`, `limit`, `sortBy`, `order`
-
-**Query params for admin tickets:**
-- `status` — "valid", "used", "cancelled", or "expired"
-- `eventId` — filter to a specific event
-
----
-
-## Email configuration
-
-### Development (default — no setup needed)
-
-By default, if `EMAIL_USER` isn't set in `.env`, the app uses [Ethereal](https://ethereal.email/) — a fake SMTP service that catches emails without delivering them. After each registration, you'll see something like this in your console:
+### Step 3 — Look up the ticket
 
 ```
-📧 Email preview (Ethereal): https://ethereal.email/message/abc123...
+GET http://localhost:5000/api/tickets/AB12-CD34-EF56
 ```
 
-Open that URL in your browser to see exactly what the attendee would receive. The URL is also included in the API response under `emailPreviewUrl`.
-
-### Production (real email)
-
-Configure these in your `.env`:
-
-```env
-EMAIL_HOST=smtp.sendgrid.net   # or smtp.mailgun.org, smtp.brevo.com, etc.
-EMAIL_PORT=587
-EMAIL_SECURE=false             # true only for port 465
-EMAIL_USER=apikey              # your SMTP username
-EMAIL_PASS=your_api_key_here   # your SMTP password or API key
-EMAIL_FROM="Your Events <noreply@yourdomain.com>"
-```
-
-**Provider quick-reference:**
-
-| Provider | Host | Port | Notes |
-|----------|------|------|-------|
-| SendGrid | `smtp.sendgrid.net` | 587 | Use "apikey" as user |
-| Mailgun | `smtp.mailgun.org` | 587 | |
-| Brevo (Sendinblue) | `smtp-relay.brevo.com` | 587 | |
-| Gmail | `smtp.gmail.com` | 587 | Needs App Password, not your real password |
-| Postmark | `smtp.postmarkapp.com` | 587 | |
+Returns the ticket details including the QR code, event info, and current status.
 
 ---
 
-## How overbooking prevention works
+### Step 4 — Validate (scan) the ticket at the gate
 
-This comes up a lot so it's worth explaining clearly.
+This is what a QR scanner app would call when someone arrives. The QR code encodes this URL directly, so scanning it automatically hits this endpoint.
 
-When someone registers, instead of doing:
-
-```js
-// ❌ This has a race condition
-const event = await Event.findById(eventId);
-if (event.availableSlots > 0) {
-  event.availableSlots -= 1;
-  await event.save();
-  // ... create registration
-}
+```
+POST http://localhost:5000/api/tickets/validate/AB12-CD34-EF56
+Content-Type: application/json
 ```
 
-We do this in a single atomic operation:
 
-```js
-// ✅ This is race-condition safe
-const event = await Event.findOneAndUpdate(
-  { _id: eventId, availableSlots: { $gt: 0 } },  // condition
-  { $inc: { availableSlots: -1 } },               // update
-  { new: true }
-);
-```
-
-The check and the decrement happen at the same time in the database. If two requests arrive simultaneously for the last available slot, MongoDB guarantees that only one of them will match the `$gt: 0` condition and decrement. The other gets `null` back and we return a "fully booked" response.
-
----
-
-## Response format
-
-Every endpoint returns the same JSON shape:
-
+**If the ticket is valid:**
 ```json
-// Success
 {
   "success": true,
-  "message": "Registration confirmed!",
-  "data": { ... }
+  "message": "Welcome, Oluwatobi Adelabu!",
+  "data": { "attendeeName": "Oluwatobi Adelabu", "event": "...", "usedAt": "..." }
 }
+```
 
-// Error
+**If someone tries to scan it again:**
+```json
 {
   "success": false,
-  "message": "This event is fully booked.",
-  "errors": ["field: message"]   // only on validation failures
+  "message": "This ticket was already used on 8/10/2025, 10:34:22 AM. Entry denied."
 }
 ```
 
 ---
 
-## Packages you'll need for common next features
+### Step 5 — Cancel a registration
 
-Here are the packages to install when you're ready to build on top of this, with a quick note on what each one does and why you'd use it.
-
-### Authentication & Security
-
-```bash
-# JWT-based authentication — for user accounts, protected registrations
-npm install jsonwebtoken bcryptjs
-
-# Helmet — sets sensible HTTP security headers with one line
-npm install helmet
-
-# Rate limiting — prevent abuse and brute-force attacks
-npm install express-rate-limit
-
-# CORS — allow your frontend to talk to this API from a different origin
-npm install cors
+```
+PATCH http://localhost:5000/api/registrations/REGISTRATION_ID/cancel
 ```
 
-### Payments
+This marks the registration as cancelled, invalidates the ticket, and adds the slot back to the event so someone else can register.
 
-```bash
-# Stripe — the standard for accepting card payments
-# You'd use this to charge for paid events before confirming registration
-npm install stripe
+---
+
+### Admin routes
+
+All admin routes need this header:
+
+```
+x-admin-key: admin123
 ```
 
-### File uploads
-
-```bash
-# Multer — handles multipart/form-data for file uploads
-# Use this if you want admins to upload event banner images
-npm install multer
-
-# AWS S3 — store uploaded files in the cloud instead of on the server
-npm install @aws-sdk/client-s3
-
-# Cloudinary — simpler alternative to S3 for image uploads/transformation
-npm install cloudinary
+**See all events with registration counts:**
+```
+GET http://localhost:5000/api/admin/events
+Header: x-admin-key: admin123
 ```
 
-### Scheduling & Background jobs
-
-```bash
-# node-cron — run scheduled tasks (e.g. send reminder emails 24h before an event)
-npm install node-cron
-
-# Bull — a proper job queue backed by Redis, for heavier background work
-# like sending thousands of reminder emails without blocking the server
-npm install bull
-npm install ioredis  # Redis client, required by Bull
+**See everyone registered for a specific event:**
+```
+GET http://localhost:5000/api/admin/events/EVENT_ID/registrations
+Header: x-admin-key: admin123
 ```
 
-### Caching
-
-```bash
-# ioredis — Redis client for caching frequently-read data like event listings
-npm install ioredis
-```
-
-### Testing
-
-```bash
-# Jest + Supertest — the standard combo for testing Express APIs
-npm install --save-dev jest supertest @jest/globals
-
-# Mongodb-memory-server — spins up a real in-memory MongoDB for tests
-# so you don't need a running database to run your test suite
-npm install --save-dev mongodb-memory-server
-```
-
-### PDF generation (e.g. printable tickets)
-
-```bash
-# PDFKit — generate PDF files in Node.js
-# You could use this to produce a printable ticket PDF as an email attachment
-npm install pdfkit
-```
-
-### Websockets (real-time check-in dashboard)
-
-```bash
-# Socket.io — if you want a live check-in board that updates as people scan in
-npm install socket.io
-```
-
-### API documentation
-
-```bash
-# Swagger UI + JSDoc annotation-based docs
-npm install swagger-ui-express swagger-jsdoc
-```
-
-### Logging
-
-```bash
-# Winston — structured logging that's better than console.log for production
-npm install winston
-
-# Or Pino — faster and lighter than Winston
-npm install pino pino-http
+The response includes a summary like:
+```json
+{
+  "summary": {
+    "totalRegistrations": 25,
+    "confirmed": 23,
+    "cancelled": 2,
+    "checkedIn": 18
+  }
+}
 ```
 
 ---
 
-## Upgrading the admin authentication
+### Creating an event (admin)
 
-The current admin auth is an API key check — simple and fine to start with. When you're ready for proper user authentication:
+```
+POST http://localhost:5000/api/events
+Header: x-admin-key: admin123
+Content-Type: application/json
+```
 
-1. Install: `npm install jsonwebtoken bcryptjs`
-2. Create a `user.model.js` with hashed passwords
-3. Create an `auth.routes.js` with `/login` and `/register`
-4. Replace `auth.middleware.js` with a JWT verification middleware
-5. Add role-based access (admin, organizer, attendee) as needed
+```json
+{
+  "title": "JavaScript for Beginners",
+  "description": "Learn the basics of JavaScript in one afternoon.",
+  "date": "2025-11-01T14:00:00",
+  "location": "CcHub, Yaba, Lagos",
+  "capacity": 40,
+  "price": 0,
+  "organizer": "DevCircle Africa",
+  "organizerEmail": "hello@devcircle.africa"
+}
+
+
+
+```
+### All API endpoints
+
+- GET - `/api/events` - Doesn't require admin - List all events -
+- GET - `/api/events/:id` - Doesn't require admin - Get one event -
+- POST - `/api/events` - Requires Admin - Create an event -
+- PATCH - `/api/events/:id` - Requires Admin - Update an event -
+- POST - `/api/registrations` - Doesn't require admin - Register for an event -
+- GET - `/api/registrations/:id` - Doesn't require admin - View a registration -
+- PATCH - `/api/registrations/:id/cancel` - Doesn't require admin - Cancel a registration -
+- GET - `/api/tickets/:ticketCode` - Doesn't require admin - Look up a ticket -
+- POST - `/api/tickets/validate/:ticketCode` - Doesn't require admin - Validate a ticket at the gate -
+- GET - `/api/admin/events` - Requires Admin - All events with stats -
+- GET - `/api/admin/events/:id/registrations` - Requires Admin - Registrations for an event -
 
 ---
 
-## Frequently asked questions
+## Packages used (!important)
 
-**Why do I get a transaction error on local MongoDB?**
-Local MongoDB needs to run as a replica set for sessions/transactions to work. See the setup instructions above — it's a one-time config change. Alternatively, you can switch to MongoDB Atlas which supports transactions out of the box.
+ `express` - The web framework — handles routing and HTTP 
+ `mongoose` - Connects to MongoDB and defines data schemas 
+ `nodemailer` - Sends emails (or uses Ethereal for fake emails in dev) 
+ `qrcode` - Generates QR code images from text 
+ `uuid` - Generates unique IDs (used for ticket codes) 
+ `dotenv` - Loads the `.env` file into `process.env` 
+ `nodemon` - Restarts the server automatically when changes are made (dev dependency) 
 
-**The email isn't sending in development — is that normal?**
-Yes. With no `EMAIL_USER` set, emails go to Ethereal (a fake inbox). Check the console for the preview URL after registering, or look for `emailPreviewUrl` in the API response.
 
-**Can someone register multiple times with different emails?**
-Yes — the uniqueness check is per email+event combination. If you want to limit registrations by phone number or IP address, you'd need to add additional indexes and checks.
 
-**Where is the QR code stored?**
-In the `Ticket` document as a base64-encoded PNG string in the `qrCodeData` field. For high-volume systems, you'd want to upload the image to S3 or Cloudinary and store a URL instead to avoid storing large blobs in MongoDB.
+## Common issues
 
-**What happens if I delete an event?**
-There's no delete endpoint currently — only status updates. Setting an event to `cancelled` is the intended way to deactivate it. This preserves registration history, which you almost certainly want to keep.
+**"Cannot use require statement"**
+This project uses ESM (`import`).
+
+**Email preview URL not showing up**
+Check your terminal — it's printed there when using Ethereal. It's also in the API response under `emailPreviewUrl`. 
+<!-- According to the YouTube video -->
+
+**Admin routes returning 401**
+Add the header `x-admin-key: admin123` to your request in Postman or Thunder Client.
 
 ---
-
-## License
-
-MIT — do whatever you want with it.

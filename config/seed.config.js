@@ -41,7 +41,7 @@ const sampleEvents = [
     organizerEmail: "info@uxnigeria.com",
   },
 
-  // Third
+  // Fourth
   {
     title: "Data Science for Fintech",
     description: "An intensive session on applying machine learning models to financial risk and fraud detection.",
@@ -52,6 +52,8 @@ const sampleEvents = [
     organizer: "Oluwatobi Adela-tech",
     organizerEmail: "community@oluwatobiadelabu.tech",
   },
+
+  // Fifth
   {
     title: "Cloud Infrastructure Summit",
     description: "Deep dive into AWS and Azure architecture for scaling high-traffic applications.",
@@ -62,6 +64,8 @@ const sampleEvents = [
     organizer: "CloudOps Nigeria",
     organizerEmail: "ops@cloudops.ng",
   },
+
+  // Sixth
   {
     title: "Mobile App Development Bootcamp",
     description: "Build your first cross-platform mobile app using Flutter in this hands-on weekend workshop.",
@@ -72,6 +76,8 @@ const sampleEvents = [
     organizer: "Tech Crush Africa",
     organizerEmail: "info@techcrush.pro",
   },
+
+  // Seventh
   {
     title: "Cybersecurity Awareness Seminar",
     description: "Essential security practices for startups to protect user data and prevent breaches.",
@@ -82,6 +88,8 @@ const sampleEvents = [
     organizer: "SafeNet Africa",
     organizerEmail: "support@safenet.africa",
   },
+
+  // Eighth
   {
     title: "AI & Ethics Roundtable",
     description: "A discussion on the ethical implications of Generative AI in the African creative industry.",
@@ -92,6 +100,8 @@ const sampleEvents = [
     organizer: "AI Policy Group",
     organizerEmail: "contact@aipolicy.org",
   },
+
+  // Ninth
   {
     title: "Product Management Mixer",
     description: "Networking event for PMs to share strategies on product-led growth and roadmap planning.",
@@ -102,6 +112,8 @@ const sampleEvents = [
     organizer: "PM Hub",
     organizerEmail: "hello@pmhub.africa",
   },
+
+  // Tenth
   {
     title: "Blockchain Developers Meetup",
     description: "Exploring smart contract development on Ethereum and the future of DeFi in Nigeria.",
@@ -148,3 +160,9 @@ async function runSeed() {
 
 // Invoking the runSeed function
 runSeed();
+
+
+/*
+  As of 16th of March 2026, I have already run it.
+  Reminder: Don't run again!!!
+*/ 
