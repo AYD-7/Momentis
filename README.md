@@ -172,7 +172,12 @@ This is what a QR scanner app would call when someone arrives. The QR code encod
 POST http://localhost:5000/api/tickets/validate/AB12-CD34-EF56
 Content-Type: application/json
 ```
-
+*Additional Info*
+In Postman add this to the body:
+```json
+{
+  "scannedBy": "Admin Oluwatobi"
+}
 
 **If the ticket is valid:**
 ```json
@@ -187,7 +192,7 @@ Content-Type: application/json
 ```json
 {
   "success": false,
-  "message": "This ticket was already used on 8/10/2025, 10:34:22 AM. Entry denied."
+  "message": "This ticket was already used on 15/03/2026, 10:34:22 AM. Entry denied."
 }
 ```
 
