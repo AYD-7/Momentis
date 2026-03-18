@@ -22,11 +22,11 @@ Built as a capstone project. No fancy abstractions — just clean, readable code
 ## Project structure
 
 ```
-src/
-├── app.js                         ← entry point, wires everything together
+
+├── index.js                         ← entry point, wires everything together
 ├── config/
-│   ├── db.js                      ← MongoDB connection
-│   └── seed.js                    ← adds sample events to the database
+│   ├── db.config.js                      ← MongoDB connection
+│   └── seed.config.js                    ← adds sample events to the database
 ├── models/
 │   ├── event.model.js             ← what an event looks like in the database
 │   ├── registration.model.js      ← stores each person's registration
