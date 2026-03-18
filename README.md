@@ -1,8 +1,5 @@
-# Event Registration System
-
+# Momentis
 A simple Node.js and Express backend that lets people register for events, receive a ticket by email, and get checked in at the door using a QR code.
-
-Built as a capstone project. No fancy abstractions — just clean, readable code that works.
 
 ---
 
