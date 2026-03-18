@@ -83,7 +83,7 @@ export const sendConfirmationEmail = async ({ to, name, event, ticketCode, qrCod
       </div>
 
       <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 13px;">
-        <p>Questions? Email the organizer: <strong><a href="mailto:${event.organizerEmail} target="_blank" rel="noreferrer noopener">${event.organizerEmail}</a></strong></p>
+        <p>Questions? Email the organizer: <strong><a href="mailto:${event.organizerEmail}">${event.organizerEmail}</a></strong></p>
       </div>
 
     </div>

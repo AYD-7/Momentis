@@ -287,7 +287,6 @@ Content-Type: application/json
  `mongoose` - Connects to MongoDB and defines data schemas 
  `nodemailer` - Sends emails (or uses Ethereal for fake emails in dev) 
  `qrcode` - Generates QR code images from text 
- `uuid` - Generates unique IDs (used for ticket codes) 
  `dotenv` - Loads the `.env` file into `process.env` 
  `nodemon` - Restarts the server automatically when changes are made (dev dependency) 
 
