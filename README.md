@@ -64,7 +64,7 @@ cp .env.example .env
 The only thing you must set is `MONGO_URI`. Everything else works fine with the defaults.
 
 ```
-MONGO_URI=mongodb://localhost:27017/event_registration
+MONGO_URI=mongodb://localhost:27017/momentis
 ```
 
 If you're using MongoDB Atlas, paste your connection string there instead.
@@ -76,7 +76,7 @@ npm run seed
 ```
 
 This creates ten test events you can immediately register for. Run it once.
-By the time you are seeing this, I have already done it.
+*By the time you are seeing this, I have already done it.*
 
 ### 4. Start the server
 
@@ -148,7 +148,7 @@ Content-Type: application/json
 ```
 
 The `emailPreviewUrl` is only present in development mode. Open it in the browser to see exactly what the email looks like.
-
+*Having hiccups with this, check your email inbox to view*
 ---
 
 ### Step 3 — Look up the ticket
