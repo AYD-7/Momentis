@@ -62,6 +62,7 @@ cp .env.example .env
 ```
 
 The only thing you must set is `MONGO_URI`. Everything else works fine with the defaults.
+But to get the best result, set up your nodemailer. T for thanks.
 
 ```
 MONGO_URI=mongodb://localhost:27017/momentis
@@ -76,7 +77,7 @@ npm run seed
 ```
 
 This creates ten test events you can immediately register for. Run it once.
-*By the time you are seeing this, I have already done it.*
+*By the time you are seeing this, I have done that already.*
 
 ### 4. Start the server
 
