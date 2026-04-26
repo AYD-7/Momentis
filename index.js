@@ -19,7 +19,9 @@ const app = express();
 // Core Middleware
 app.use(express.json()); // parser
 app.use(morgan(process.env.NODE_ENV === "production" ? 'combined' : 'dev')); // logger
-app.use(cors({origin: "https://momentis.netlify.app/"}))
+app.use(
+  cors({ origin: ["https://momentis.netlify.app", "http://localhost:5173"] }),
+);
 
 // Database connection
 connectDB();
