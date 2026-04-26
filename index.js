@@ -9,6 +9,7 @@ import eventRoutes from './routes/event.routes.js';
 import registrationRoutes from './routes/registration.routes.js';
 import ticketRoutes from './routes/ticket.routes.js'
 import connectDB from './config/db.config.js';
+import cors from 'cors'
 
 
 
@@ -18,6 +19,7 @@ const app = express();
 // Core Middleware
 app.use(express.json()); // parser
 app.use(morgan(process.env.NODE_ENV === "production" ? 'combined' : 'dev')); // logger
+app.use(cors({origin: "https://momentis.netlify.app/"}))
 
 // Database connection
 connectDB();
